@@ -1,3 +1,25 @@
-## 0.0.1
+## 1.0.0
 
-* TODO: Describe initial release.
+### 🎉 Initial Release
+
+#### Core Features
+- **StateRef** - Mutable state atoms with auto-dispose policies
+- **Computed** - Derived state with automatic dependency tracking
+- **EagerComputed** - Immediately recomputes when dependencies change
+- **SafeComputed** - Captures exceptions as `Result<T>` instead of throwing
+- **AsyncComputed** - Async state management with `AsyncValue<T>`
+- **Effect** - One-time events with drop/bufferN/ttl strategies
+
+#### Flutter Integration
+- **HoneycombScope** - Widget tree state container with override support
+- **HoneycombConsumer** - Builder widget for watching state
+- **HoneycombListener** - Side-effect listener for effects
+- **Context extensions** - `context.read()`, `context.watch()`, `context.listen()`
+
+#### Advanced Features
+- Batch updates for performance optimization
+- Scope/Override mechanism for dependency injection
+- Hot reload support with `reassemble()`
+- Pluggable diagnostics and logging system
+- Multiple dispose policies: `keepAlive`, `autoDispose`, `delayed`
+

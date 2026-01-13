@@ -107,12 +107,12 @@ class CounterPage extends StatelessWidget {
 
 | 文档 | 描述 |
 |------|------|
-| [新手入门](docs/getting-started.md) | 从零开始学习 Honeycomb |
-| [核心概念](docs/core-concepts.md) | 深入理解设计思想 |
-| [API 参考](docs/api-reference.md) | 完整 API 文档 |
-| [最佳实践](docs/best-practices.md) | 推荐的使用模式 |
-| [对比其他库](docs/comparison.md) | 与 Provider/Riverpod/Bloc 对比 |
-| [常见问题](docs/faq.md) | FAQ |
+| [新手入门](doc/getting-started.md) | 从零开始学习 Honeycomb |
+| [核心概念](doc/core-concepts.md) | 深入理解设计思想 |
+| [API 参考](doc/api-reference.md) | 完整 API 文档 |
+| [最佳实践](doc/best-practices.md) | 推荐的使用模式 |
+| [对比其他库](doc/comparison.md) | 与 Provider/Riverpod/Bloc 对比 |
+| [常见问题](doc/faq.md) | FAQ |
 
 ---
 

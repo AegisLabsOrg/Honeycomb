@@ -1,5 +1,5 @@
+import 'package:aegis_honeycomb/honeycomb.dart';
 import 'package:flutter/material.dart';
-import 'package:honeycomb/honeycomb.dart';
 
 void main() {
   // 启用诊断日志 - 使用 PrintLogger 直接输出到终端

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:honeycomb/honeycomb.dart';
+import 'package:aegis_honeycomb/honeycomb.dart';
 
 void main() {
   group('HoneycombScope', () {

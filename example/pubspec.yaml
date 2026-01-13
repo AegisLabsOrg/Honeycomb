@@ -11,7 +11,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  honeycomb:
+  aegis_honeycomb:
     path: ../
 
 dev_dependencies:

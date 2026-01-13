@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:honeycomb/honeycomb.dart';
-import 'package:honeycomb/src/compute_node.dart';
+import 'package:aegis_honeycomb/honeycomb.dart';
+import 'package:aegis_honeycomb/src/compute_node.dart';
 
 void main() {
   group('Improvements', () {

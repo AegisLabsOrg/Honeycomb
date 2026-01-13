@@ -6,25 +6,25 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.27+-blue.svg)](https://flutter.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Concise, type-safe, codegen-free state management library for Flutter.**
+**简洁、类型安全、无需代码生成的 Flutter 状态管理库**
 
-Honeycomb provides clear separation between **State** and **Effect** semantics, automatic dependency tracking, and a powerful Scope/Override mechanism.
-
----
-
-## ✨ Features
-
-- 🎯 **No Codegen** — Pure Dart, no build_runner required.
-- 🔄 **Auto Dependency Tracking** — Computed automatically tracks dependencies from `watch`.
-- 📡 **State vs Effect** — Clearly distinguish between replayable state and one-time events.
-- 🎭 **Scope/Override** — Flexible dependency injection and local overrides.
-- ⚡ **Batch Updates** — Reduce unnecessary rebuilds by batching changes.
-- 🔒 **Type Safe** — Full generic support.
-- 🧪 **Easy to Test** — Decouple state logic from UI for easy testing.
+Honeycomb 提供清晰的 **State（状态）** 与 **Effect（事件）** 语义分离，自动依赖追踪，以及强大的 Scope/Override 机制。
 
 ---
 
-## 📦 Installation
+## ✨ 特性
+
+- 🎯 **无 Codegen** — 纯 Dart，无需 build_runner
+- 🔄 **自动依赖追踪** — Computed 自动追踪 watch 的依赖
+- 📡 **State vs Effect** — 明确区分可重放状态和一次性事件
+- 🎭 **Scope/Override** — 灵活的依赖注入和局部覆盖
+- ⚡ **批量更新** — 减少不必要的重建
+- 🔒 **类型安全** — 完整的泛型支持
+- 🧪 **易于测试** — 状态逻辑与 UI 解耦
+
+---
+
+## 📦 安装
 
 ```yaml
 dependencies:
@@ -37,30 +37,30 @@ flutter pub get
 
 ---
 
-## 🚀 Quick Start
+## 🚀 快速开始
 
-### 1. Define State
+### 1. 定义状态
 
 ```dart
 import 'package:aegis_honeycomb/honeycomb.dart';
 
-// Read-write state
+// 可读写的状态
 final counterState = StateRef(0);
 
-// Derived state (auto dependency tracking)
+// 派生状态 (自动追踪依赖)
 final doubledCounter = Computed((watch) => watch(counterState) * 2);
 
-// Async state
+// 异步状态
 final userProfile = Computed.async((watch) async {
   final userId = watch(currentUserId);
   return await api.fetchUser(userId);
 });
 
-// One-time events
+// 一次性事件
 final toastEffect = Effect<String>();
 ```
 
-### 2. Provide Container
+### 2. 提供容器
 
 ```dart
 void main() {
@@ -73,7 +73,7 @@ void main() {
 }
 ```
 
-### 3. Use in UI
+### 3. 在 UI 中使用
 
 ```dart
 class CounterPage extends StatelessWidget {
@@ -105,45 +105,45 @@ class CounterPage extends StatelessWidget {
 
 ---
 
-## 📚 Documentation
+## 📚 文档
 
-| Document | Description |
+| 文档 | 描述 |
 |------|------|
-| [Getting Started](doc/en/getting-started.md) | Learn Honeycomb from scratch |
-| [Core Concepts](doc/en/core-concepts.md) | Deep dive into design philosophy |
-| [API Reference](doc/en/api-reference.md) | Full API documentation |
-| [Best Practices](doc/en/best-practices.md) | Recommended usage patterns |
-| [Comparison](doc/en/comparison.md) | Comparison with Provider/Riverpod/Bloc |
-| [FAQ](doc/en/faq.md) | Frequently Asked Questions |
+| [新手入门](doc/zh/getting-started.md) | 从零开始学习 Honeycomb |
+| [核心概念](doc/zh/core-concepts.md) | 深入理解设计思想 |
+| [API 参考](doc/zh/api-reference.md) | 完整 API 文档 |
+| [最佳实践](doc/zh/best-practices.md) | 推荐的使用模式 |
+| [对比其他库](doc/zh/comparison.md) | 与 Provider/Riverpod/Bloc 对比 |
+| [常见问题](doc/zh/faq.md) | FAQ |
 
 ---
 
-## 🎯 Core Concepts at a Glance
+## 🎯 核心概念速览
 
 ### State vs Effect
 
 ```dart
-// State: Replayable, always returns the latest value
+// State: 可重放，任何时候读取都能拿到最新值
 final userName = StateRef('Guest');
 
-// Effect: One-time event, no historical storage
+// Effect: 一次性事件，不存储历史
 final showToast = Effect<String>(strategy: EffectStrategy.drop);
 ```
 
-### Dependency Tracking
+### 依赖追踪
 
 ```dart
 final fullName = Computed((watch) {
-  // Automatically tracks firstName and lastName
+  // 自动追踪 firstName 和 lastName
   return '${watch(firstName)} ${watch(lastName)}';
 });
-// fullName recalculates whenever firstName or lastName changes
+// firstName 或 lastName 变化时，fullName 自动重算
 ```
 
 ### Scope Override
 
 ```dart
-// Locally override state (e.g., for testing or theme switching)
+// 局部覆盖状态 (如测试或主题切换)
 HoneycombScope(
   overrides: [
     themeState.overrideWith(ThemeData.dark()),
@@ -154,7 +154,7 @@ HoneycombScope(
 
 ---
 
-## 🧪 Testing
+## 🧪 测试
 
 ```dart
 test('counter increments', () {
@@ -171,25 +171,25 @@ test('counter increments', () {
 
 ---
 
-## 📊 Comparison
+## 📊 与其他库对比
 
-| Feature | Honeycomb | Provider | Riverpod | Bloc |
+| 特性 | Honeycomb | Provider | Riverpod | Bloc |
 |------|-----------|----------|----------|------|
-| No Codegen | ✅ | ✅ | ❌ | ✅ |
-| Auto Tracking | ✅ | ❌ | ✅ | ❌ |
-| State/Effect Separation | ✅ | ❌ | ❌ | ✅ |
+| 无 Codegen | ✅ | ✅ | ❌ | ✅ |
+| 自动依赖追踪 | ✅ | ❌ | ✅ | ❌ |
+| State/Effect 分离 | ✅ | ❌ | ❌ | ✅ |
 | Scope Override | ✅ | ✅ | ✅ | ❌ |
-| Batch Updates | ✅ | ❌ | ❌ | ✅ |
-| Learning Curve | Low | Low | Medium | High |
+| 批量更新 | ✅ | ❌ | ❌ | ✅ |
+| 学习曲线 | 低 | 低 | 中 | 高 |
 
 ---
 
-## 🤝 Contributing
+## 🤝 贡献
 
-Contributions are welcome! Please check [CONTRIBUTING.md](CONTRIBUTING.md).
+欢迎贡献！请查看 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ---
 
 ## 📄 License
 
-MIT License - See the [LICENSE](LICENSE) file.
+MIT License - 查看 [LICENSE](LICENSE) 文件

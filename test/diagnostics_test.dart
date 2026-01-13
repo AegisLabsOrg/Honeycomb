@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:honeycomb/honeycomb.dart';
+import 'package:aegis_honeycomb/honeycomb.dart';
 
 /// 测试用 Logger，收集日志输出
 class TestLogger implements HoneycombLogger {

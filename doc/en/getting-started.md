@@ -1,31 +1,31 @@
-# 新手入门
+# Getting Started
 
-本指南将带你从零开始学习 Honeycomb 状态管理库。
-
----
-
-## 目录
-
-1. [安装](#安装)
-2. [第一个示例：计数器](#第一个示例计数器)
-3. [理解核心概念](#理解核心概念)
-4. [使用派生状态](#使用派生状态)
-5. [处理异步数据](#处理异步数据)
-6. [使用事件](#使用事件)
-7. [下一步](#下一步)
+This guide will walk you through learning the Honeycomb state management library from scratch.
 
 ---
 
-## 安装
+## Contents
 
-在 `pubspec.yaml` 中添加依赖：
+1. [Installation](#installation)
+2. [First Example: Counter](#first-example-counter)
+3. [Understanding Core Concepts](#understanding-core-concepts)
+4. [Using Derived State](#using-derived-state)
+5. [Handling Async Data](#handling-async-data)
+6. [Using Effects](#using-effects)
+7. [Next Steps](#next-steps)
+
+---
+
+## Installation
+
+Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
   honeycomb: ^1.0.0
 ```
 
-然后运行：
+Then run:
 
 ```bash
 flutter pub get
@@ -33,33 +33,33 @@ flutter pub get
 
 ---
 
-## 第一个示例：计数器
+## First Example: Counter
 
-让我们创建一个简单的计数器应用来理解 Honeycomb 的基本用法。
+Let's create a simple counter application to understand the basic usage of Honeycomb.
 
-### Step 1: 定义状态
+### Step 1: Define State
 
-创建 `lib/states.dart`：
+Create `lib/states.dart`:
 
 ```dart
-import 'package:honeycomb/honeycomb.dart';
+import 'package:aegis_honeycomb/honeycomb.dart';
 
-// 定义一个可读写的状态
+// Define a read-write state
 final counterState = StateRef(0);
 ```
 
-`StateRef` 是 Honeycomb 中最基础的状态容器。它：
-- 持有一个值
-- 任何时候读取都能拿到最新值
-- 值变化时通知所有订阅者
+`StateRef` is the most basic state container in Honeycomb. It:
+- Holds a value
+- Returns the latest value when read
+- Notifies all subscribers when the value changes
 
-### Step 2: 设置 HoneycombScope
+### Step 2: Setup HoneycombScope
 
-在 `lib/main.dart` 中：
+In `lib/main.dart`:
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:honeycomb/honeycomb.dart';
+import 'package:aegis_honeycomb/honeycomb.dart';
 import 'states.dart';
 
 void main() {
@@ -83,9 +83,9 @@ class MyApp extends StatelessWidget {
 }
 ```
 
-`HoneycombScope` 通过 Flutter 的 InheritedWidget 机制向下传递 `HoneycombContainer`，让子组件可以访问状态。
+`HoneycombScope` passes the `HoneycombContainer` down via Flutter's InheritedWidget mechanism, allowing child components to access state.
 
-### Step 3: 读取和修改状态
+### Step 3: Reading and Modifying State
 
 ```dart
 class CounterPage extends StatelessWidget {
@@ -98,7 +98,7 @@ class CounterPage extends StatelessWidget {
       body: Center(
         child: HoneycombConsumer(
           builder: (context, ref, child) {
-            // 使用 ref.watch 读取状态，并在变化时重建
+            // Use ref.watch to read state and rebuild when it changes
             final count = ref.watch(counterState);
             
             return Text(
@@ -110,7 +110,7 @@ class CounterPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // 获取容器并修改状态
+          // Get container and modify state
           final container = HoneycombScope.readOf(context);
           final current = container.read(counterState);
           container.write(counterState, current + 1);
@@ -122,59 +122,59 @@ class CounterPage extends StatelessWidget {
 }
 ```
 
-**关键点：**
-- `ref.watch(atom)` — 读取值并订阅变化，值变化时 Widget 自动重建
-- `container.read(atom)` — 只读取值，不订阅
-- `container.write(stateRef, newValue)` — 写入新值
+**Key Points:**
+- `ref.watch(atom)` — Reads the value and subscribes to changes; widget rebuilds automatically when the value changes.
+- `container.read(atom)` — Read-only, no subscription.
+- `container.write(stateRef, newValue)` — Writes a new value.
 
 ---
 
-## 理解核心概念
+## Understanding Core Concepts
 
-### 三种访问模式
+### Three Access Modes
 
-| 方法 | 用途 | 是否订阅 |
+| Method | Purpose | Subscribes? |
 |------|------|---------|
-| `ref.watch(atom)` | 在 UI 中读取，需要响应变化 | ✅ |
-| `container.read(atom)` | 一次性读取（如事件处理） | ❌ |
-| `container.write(ref, value)` | 写入新值 | - |
+| `ref.watch(atom)` | Read in UI, need to react to changes | ✅ |
+| `container.read(atom)` | One-time read (e.g., event handling) | ❌ |
+| `container.write(ref, value)` | Write new value | - |
 
-### 为什么分开 watch 和 read？
+### Why Separate watch and read?
 
 ```dart
-// ❌ 不好：在事件处理中用 watch 会导致不必要的订阅
+// ❌ Bad: Using watch in event handlers creates unnecessary subscriptions
 onPressed: () {
-  final count = ref.watch(counterState); // 错误！
+  final count = ref.watch(counterState); // Error!
 }
 
-// ✅ 好：事件处理中用 read
+// ✅ Good: Use read in event handlers
 onPressed: () {
   final container = HoneycombScope.readOf(context);
-  final count = container.read(counterState); // 正确
+  final count = container.read(counterState); // Correct
 }
 ```
 
 ---
 
-## 使用派生状态
+## Using Derived State
 
-`Computed` 用于创建从其他状态派生的值，并自动追踪依赖。
+`Computed` is used to create values derived from other states, with automatic dependency tracking.
 
 ```dart
 // states.dart
 final counterState = StateRef(0);
 
-// 派生状态：计数器的两倍
+// Derived state: Double the counter
 final doubledCounter = Computed((watch) {
   return watch(counterState) * 2;
 });
 
-// 派生状态：是否为偶数
+// Derived state: Check if even
 final isEven = Computed((watch) {
   return watch(counterState) % 2 == 0;
 });
 
-// 组合多个状态
+// Combining multiple states
 final firstName = StateRef('John');
 final lastName = StateRef('Doe');
 
@@ -183,12 +183,12 @@ final fullName = Computed((watch) {
 });
 ```
 
-**Computed 的特点：**
-- ✅ 惰性求值 — 只有被 watch 时才计算
-- ✅ 自动缓存 — 依赖不变时不重算
-- ✅ 自动追踪 — 不需要手动声明依赖
+**Computed Features:**
+- ✅ Lazy Evaluation — Only recalculated when watched.
+- ✅ Auto Caching — Not recalculated if dependencies haven't changed.
+- ✅ Auto Tracking — No need to manually declare dependencies.
 
-在 UI 中使用：
+Using in UI:
 
 ```dart
 HoneycombConsumer(
@@ -210,9 +210,9 @@ HoneycombConsumer(
 
 ---
 
-## 处理异步数据
+## Handling Async Data
 
-使用 `Computed.async` 处理异步操作：
+Use `Computed.async` for async operations:
 
 ```dart
 final selectedUserId = StateRef(1);
@@ -220,14 +220,14 @@ final selectedUserId = StateRef(1);
 final userProfile = Computed.async((watch) async {
   final userId = watch(selectedUserId);
   
-  // 模拟 API 请求
+  // Simulate API request
   await Future.delayed(const Duration(seconds: 1));
   
   return await api.fetchUser(userId);
 });
 ```
 
-`Computed.async` 返回 `AsyncValue<T>`，包含三种状态：
+`Computed.async` returns `AsyncValue<T>`, which includes three states:
 
 ```dart
 HoneycombConsumer(
@@ -243,46 +243,46 @@ HoneycombConsumer(
 )
 ```
 
-### AsyncValue 方法
+### AsyncValue Methods
 
 ```dart
-asyncValue.when(loading: ..., data: ..., error: ...);  // 模式匹配
-asyncValue.valueOrNull;   // 获取值或 null
-asyncValue.isLoading;     // 是否加载中
+asyncValue.when(loading: ..., data: ..., error: ...);  // Pattern matching
+asyncValue.valueOrNull;   // Get value or null
+asyncValue.isLoading;     // Check if loading
 ```
 
 ---
 
-## 使用事件
+## Using Effects
 
-`Effect` 用于一次性事件，如 Toast、导航、埋点等。
+`Effect` is used for one-time events like Toasts, navigation, analytics, etc.
 
-### 定义事件
+### Define Effects
 
 ```dart
-// 一次性事件，无人监听时丢弃
+// One-time event, dropped if no one is listening
 final toastEffect = Effect<String>(strategy: EffectStrategy.drop);
 
-// 带缓冲区的事件，保留最近 N 条
+// Buffered events, keeps the last N events
 final notificationEffect = Effect<Notification>(
   strategy: EffectStrategy.bufferN,
   bufferSize: 10,
 );
 ```
 
-### 发送事件
+### Emitting Effects
 
 ```dart
-// 使用 context 扩展
+// Using context extension
 context.emit(toastEffect, 'Operation successful!');
 
-// 或者通过容器
+// Or via container
 container.emit(toastEffect, 'Hello!');
 ```
 
-### 监听事件
+### Listening to Effects
 
-使用 `HoneycombListener` Widget：
+Use the `HoneycombListener` Widget:
 
 ```dart
 HoneycombListener<String>(
@@ -298,31 +298,31 @@ HoneycombListener<String>(
 
 ---
 
-## 下一步
+## Next Steps
 
-恭喜！你已经掌握了 Honeycomb 的基础用法。接下来可以：
+Congratulations! You have mastered the basics of Honeycomb. Next, you can:
 
-- 📖 阅读 [核心概念](core-concepts.md) 深入理解设计思想
-- 🎯 查看 [最佳实践](best-practices.md) 了解推荐的使用模式
-- 📚 浏览 [API 参考](api-reference.md) 了解完整 API
-- 🔍 运行 [示例应用](../example) 查看更多用例
+- 📖 Read [Core Concepts](core-concepts.md) for deeper design philosophy.
+- 🎯 Check [Best Practices](best-practices.md) for recommended patterns.
+- 📚 Browse the [API Reference](api-reference.md) for the full API.
+- 🔍 Run the [Example App](../example) for more use cases.
 
 ---
 
-## 完整示例代码
+## Complete Example Code
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:honeycomb/honeycomb.dart';
+import 'package:aegis_honeycomb/honeycomb.dart';
 
-// 1. 定义状态
+// 1. Define State
 final counterState = StateRef(0);
 final doubledCounter = Computed((watch) => watch(counterState) * 2);
 final toastEffect = Effect<String>();
 
 void main() {
   runApp(
-    // 2. 提供容器
+    // 2. Provide Container
     HoneycombScope(
       container: HoneycombContainer(),
       child: const MyApp(),
@@ -355,7 +355,7 @@ class CounterPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Honeycomb Demo')),
       body: Center(
-        // 3. 使用状态
+        // 3. Use State
         child: HoneycombConsumer(
           builder: (context, ref, _) {
             final count = ref.watch(counterState);

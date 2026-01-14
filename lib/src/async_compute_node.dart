@@ -8,7 +8,7 @@ import 'compute_node.dart';
 /// 管理异步计算的节点
 class AsyncComputeNode<T> extends StateNode<AsyncValue<T>>
     implements Dependency {
-  AsyncComputeNode(this._container, this._computeFn)
+  AsyncComputeNode(this._container, this._computeFn, {super.debugKey})
     : super(const AsyncValue.loading());
 
   final HoneycombContainer _container;

@@ -1,5 +1,6 @@
 import '../honeycomb.dart';
 import 'state_node.dart';
+import 'diagnostics.dart';
 
 /// 全局变量：当前正在计算的 Computed 节点
 /// 用于在 watch() 时捕获依赖关系
@@ -22,7 +23,8 @@ class CircularDependencyError extends Error {
 
 /// 派生状态节点
 class ComputeNode<T> extends StateNode<T> implements Dependency {
-  ComputeNode(this._container, this._computeFn) : super.lazy() {
+  ComputeNode(this._container, this._computeFn, {super.debugKey})
+    : super.lazy() {
     _isDirty = true;
   }
 
@@ -35,6 +37,9 @@ class ComputeNode<T> extends StateNode<T> implements Dependency {
 
   /// 当前这一轮计算依赖的上游节点
   final Set<Node> _dependencies = {};
+
+  /// 导致本次重算的依赖 (用于诊断)
+  final Set<Atom> _dirtiedBy = {};
 
   /// 是否 "脏" 了，需要重新计算
   bool _isDirty = false;
@@ -63,6 +68,10 @@ class ComputeNode<T> extends StateNode<T> implements Dependency {
   // 作为依赖者，当上游变化时
   @override
   void onDependencyChanged(Node dependency) {
+    if (dependency is StateNode && dependency.debugKey is Atom) {
+      _dirtiedBy.add(dependency.debugKey as Atom);
+    }
+
     if (!_isDirty) {
       _isDirty = true;
       // 通知我的下游，我也可能变了（甚至不用重算，先标记脏）
@@ -93,6 +102,8 @@ class ComputeNode<T> extends StateNode<T> implements Dependency {
     _currentlyComputingNode = this;
     _computingStack.add(this);
 
+    final stopwatch = Stopwatch()..start();
+
     try {
       // 在计算前，我们要准备好收集新一轮的依赖
       // 清理旧依赖的订阅关系（避免内存泄漏和过时依赖）
@@ -111,6 +122,25 @@ class ComputeNode<T> extends StateNode<T> implements Dependency {
         // Return value without implicit tracking logic inside node.value
         return node.value;
       });
+
+      stopwatch.stop();
+
+      // Log recompute
+      if (debugKey != null &&
+          debugKey is Atom &&
+          HoneycombDiagnostics.instance.enabled) {
+        final changedDeps = _dirtiedBy.toList();
+        HoneycombDiagnostics.instance.notifyRecompute(
+          RecomputeReason(
+            atom: debugKey as Atom,
+            changedDependencies: changedDeps,
+            duration: stopwatch.elapsed,
+            newValue: newValue,
+            oldValue: isInitialized ? super.value : null,
+          ),
+        );
+      }
+      _dirtiedBy.clear();
 
       // 计算完成了，现在 _dependencies 里是最新的依赖
 

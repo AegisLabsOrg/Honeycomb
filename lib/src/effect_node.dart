@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import '../honeycomb.dart';
+import 'diagnostics.dart';
 
 /// 带时间戳的事件，用于 TTL 策略
 class _TimestampedEvent<T> {
@@ -33,6 +34,13 @@ class EffectNode<T> {
 
   void emit(T payload) {
     if (_isDisposed) return;
+
+    if (HoneycombDiagnostics.instance.enabled) {
+      HoneycombDiagnostics.instance.logger.log(
+        LogLevel.info,
+        'Effect emitted: ${effect.name ?? effect.key.toString()} -> $payload',
+      );
+    }
 
     switch (effect.strategy) {
       case EffectStrategy.drop:

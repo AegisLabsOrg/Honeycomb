@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'diagnostics.dart';
+import '../honeycomb.dart' show Atom;
 
 /// 依赖系统基类，用于构建响应式图
 abstract class Node {
@@ -35,11 +37,12 @@ abstract class Dependency {
 
 /// 内部使用的状态节点，真实持有数据和监听器
 class StateNode<T> extends Node {
-  StateNode(this._value);
+  StateNode(this._value, {this.debugKey});
 
   /// 仅用于子类延迟初始化 (Lazy)
-  StateNode.lazy() : _isInitialized = false;
+  StateNode.lazy({this.debugKey}) : _isInitialized = false;
 
+  final Object? debugKey;
   late T _value;
   bool _isInitialized = true;
 
@@ -58,8 +61,23 @@ class StateNode<T> extends Node {
 
   set value(T newValue) {
     if (!_isInitialized || _value != newValue) {
+      final oldValue = _isInitialized ? _value : null;
       _value = newValue;
       _isInitialized = true;
+
+      if (debugKey != null &&
+          debugKey is Atom &&
+          HoneycombDiagnostics.instance.enabled) {
+        HoneycombDiagnostics.instance.notifyStateChange(
+          StateChangeEvent(
+            atom: debugKey as Atom,
+            oldValue: oldValue,
+            newValue: newValue,
+            timestamp: DateTime.now(),
+          ),
+        );
+      }
+
       notifyListeners();
       notifyObservers();
     }

@@ -4,7 +4,8 @@ import 'compute_node.dart';
 
 /// 安全的 Computed 节点，异常会被捕获并封装为 Result.failure
 class SafeComputeNode<T> extends StateNode<Result<T>> implements Dependency {
-  SafeComputeNode(this._container, this._computeFn) : super.lazy() {
+  SafeComputeNode(this._container, this._computeFn, {super.debugKey})
+    : super.lazy() {
     _isDirty = true;
   }
 

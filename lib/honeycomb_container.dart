@@ -16,29 +16,29 @@ class _NodeCreator implements AtomVisitor<StateNode> {
 
   @override
   StateNode visitStateRef<T>(StateRef<T> atom) {
-    return StateNode<T>(atom.initialValue);
+    return StateNode<T>(atom.initialValue, debugKey: atom);
   }
 
   @override
   StateNode visitComputed<T>(Computed<T> atom) {
-    return ComputeNode<T>(container, atom.computeFn);
+    return ComputeNode<T>(container, atom.computeFn, debugKey: atom);
   }
 
   @override
   StateNode visitAsyncComputed<T>(AsyncComputed<T> atom) {
     // 这里 <T> 是 AsyncComputed<T> 的泛型参数 (e.g. int)
     // 返回的 StateNode 必须是 StateNode<AsyncValue<T>>
-    return AsyncComputeNode<T>(container, atom.computeFn);
+    return AsyncComputeNode<T>(container, atom.computeFn, debugKey: atom);
   }
 
   @override
   StateNode visitEagerComputed<T>(EagerComputed<T> atom) {
-    return EagerComputeNode<T>(container, atom.computeFn);
+    return EagerComputeNode<T>(container, atom.computeFn, debugKey: atom);
   }
 
   @override
   StateNode visitSafeComputed<T>(SafeComputed<T> atom) {
-    return SafeComputeNode<T>(container, atom.computeFn);
+    return SafeComputeNode<T>(container, atom.computeFn, debugKey: atom);
   }
 
   @override

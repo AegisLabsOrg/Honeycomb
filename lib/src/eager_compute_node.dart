@@ -5,7 +5,8 @@ import 'compute_node.dart';
 /// 急切求值的 Computed 节点
 /// 与普通 ComputeNode 不同，上游变化时立即重算，即使没有订阅者
 class EagerComputeNode<T> extends StateNode<T> implements Dependency {
-  EagerComputeNode(this._container, this._computeFn) : super.lazy() {
+  EagerComputeNode(this._container, this._computeFn, {super.debugKey})
+    : super.lazy() {
     // 立即计算初始值
     _recompute();
   }

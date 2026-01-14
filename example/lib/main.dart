@@ -5,9 +5,9 @@ void main() {
   // 启用诊断日志 - 使用 PrintLogger 直接输出到终端
   HoneycombDiagnostics.instance.enableLogging(
     customLogger: PrintLogger(),
-    level: LogLevel.debug,
+    level: LogLevel.info,
   );
-
+  HoneycombDiagnostics.instance.enabled=true;
   runApp(HoneycombScope(container: HoneycombContainer(), child: const MyApp()));
 }
 

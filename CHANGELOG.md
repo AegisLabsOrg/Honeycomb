@@ -1,3 +1,11 @@
+## 1.0.2
+
+- **Feature**: Enhanced Observability completely instrumented.
+  - `StateRef`, `Computed`, `Effect` now report detailed lifecycle events to `HoneycombDiagnostics`.
+  - Added `debugKey` to internal nodes to allow identifying Atoms in logs.
+  - `recompute` logs now include execution duration and the dependency that triggered the update.
+  - `emit` logs added for Effects.
+
 ## 1.0.1
 
 - **Refactor**: `HoneycombScope` is now backed by a `StatefulWidget`. This ensures the `HoneycombContainer` instance persists correctly across widget tree rebuilds (e.g. parent updates, route changes), preventing accidental state loss.

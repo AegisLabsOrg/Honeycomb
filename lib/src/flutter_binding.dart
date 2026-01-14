@@ -212,7 +212,7 @@ class _HoneycombConsumerState extends State<HoneycombConsumer>
       _isBuilding = false;
       _cleanupUnusedSubscriptions();
     }
-    return result!;
+    return result;
   }
 
   /// Remove subscriptions that were not accessed during the last build.

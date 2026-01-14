@@ -1,3 +1,9 @@
+## 1.0.1
+
+- **Refactor**: `HoneycombScope` is now backed by a `StatefulWidget`. This ensures the `HoneycombContainer` instance persists correctly across widget tree rebuilds (e.g. parent updates, route changes), preventing accidental state loss.
+- **Optimization**: `HoneycombConsumer` now performs precise dependency tracking, automatically cleaning up subscriptions for atoms not accessed during the current build.
+- **Improvement**: Enhanced Hot Reload support for `Computed` values in the widget tree.
+
 ## 1.0.0
 
 ### 🎉 Initial Release

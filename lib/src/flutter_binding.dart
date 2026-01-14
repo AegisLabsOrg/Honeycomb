@@ -2,73 +2,119 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import '../honeycomb.dart';
 
-/// 用于在 Widget 树中向下传递 [HoneycombContainer]
-class HoneycombScope extends InheritedWidget {
-  HoneycombScope({
+/// App Root Container Manager.
+/// Stores the [HoneycombContainer] in its State so it survives
+/// rebuilds of the parent widget tree.
+class HoneycombScope extends StatefulWidget {
+  const HoneycombScope({
     super.key,
-    required super.child,
+    required this.child,
     this.overrides = const [],
-    HoneycombContainer? container,
-  }) : container =
-           container ??
-           HoneycombContainer.scoped(
-             HoneycombContainer(), // Default root container
-             overrides: overrides,
-           );
+    this.parent,
+    this.container,
+  });
 
+  final Widget child;
   final List<Override> overrides;
-  final HoneycombContainer container;
+  final HoneycombContainer? parent;
+  final HoneycombContainer? container;
 
+  /// Retrieves the nearest [HoneycombContainer] from the context.
   static HoneycombContainer of(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<HoneycombScope>();
-    if (scope == null) {
-      throw StateError(
-        'No HoneycombScope found in context. Wrap your app in HoneycombScope.',
-      );
-    }
-    return scope.container;
+    // 1. Try to find the nearest _HoneycombBindingScope
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<_HoneycombBindingScope>();
+    if (scope != null) return scope.container;
+
+    // 2. Fallback: If not found, throw error
+    throw StateError(
+      'No HoneycombScope found in context. Wrap your app in HoneycombScope.',
+    );
   }
 
-  /// 仅获取 Container 而不订阅 (用于 read/emit)
+  /// Retrieves Container without subscribing (read-only access).
   static HoneycombContainer readOf(BuildContext context) {
-    // getInheritedWidgetOfExactType (O(1)) vs dependOn... (Register dependency)
-    // 我们只需要查找，不需要 InheritedWidget 本身的更新通知
     final element = context
-        .getElementForInheritedWidgetOfExactType<HoneycombScope>();
+        .getElementForInheritedWidgetOfExactType<_HoneycombBindingScope>();
     if (element == null) {
       throw StateError(
         'No HoneycombScope found in context. Wrap your app in HoneycombScope.',
       );
     }
-    return (element.widget as HoneycombScope).container;
+    return (element.widget as _HoneycombBindingScope).container;
   }
 
   @override
-  bool updateShouldNotify(HoneycombScope oldWidget) {
-    // Container 实例通常不变，变的是里面的 Atom
-    // 但如果 overrides 变了（比如热重载），我们可能需要替换 Container？
-    // 为了简单起见 Phase 5 暂时认为 Container 引用不变
+  State<HoneycombScope> createState() => _HoneycombScopeState();
+}
+
+class _HoneycombScopeState extends State<HoneycombScope> {
+  late HoneycombContainer _container;
+
+  @override
+  void initState() {
+    super.initState();
+    _initContainer();
+  }
+
+  void _initContainer() {
+    if (widget.container != null) {
+      _container = widget.container!;
+    } else {
+      _container = HoneycombContainer.scoped(
+        widget.parent ??
+            HoneycombContainer(), // Create a fresh root if no parent
+        overrides: widget.overrides,
+      );
+    }
+  }
+
+  @override
+  void didUpdateWidget(HoneycombScope oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.container != null && widget.container != oldWidget.container) {
+      _container = widget.container!;
+    }
+  }
+
+  @override
+  void dispose() {
+    // Future improvement: _container.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _HoneycombBindingScope(container: _container, child: widget.child);
+  }
+}
+
+/// The actual InheritedWidget that propagates the container down the tree.
+class _HoneycombBindingScope extends InheritedWidget {
+  const _HoneycombBindingScope({required this.container, required super.child});
+
+  final HoneycombContainer container;
+
+  @override
+  bool updateShouldNotify(_HoneycombBindingScope oldWidget) {
+    // Container instance reference is stable in _HoneycombScopeState
     return container != oldWidget.container;
   }
 }
 
-/// 暴露给 Widget 的交互接口
+/// Interface for Interacting with Atoms from Widgets.
 abstract class WidgetRef {
-  /// 监听 Atom 并在变化时重建 Widget
+  /// Watches an Atom and rebuilds the widget when it changes.
   T watch<T>(Atom<T> atom);
 
-  /// 读取 Atom 的值 (不监听)
+  /// Reads an Atom's value without subscribing.
   T read<T>(Atom<T> atom);
 
-  /// 发送效果事件
+  /// Emits an effect payload.
   void emit<T>(Effect<T> effect, T payload);
-
-  /// 订阅效果事件 (通常在 StatefulWidget 的 initState/dispose 中管理，或者在 build 中使用副作用钩子)
-  /// 注意：在 build 中直接 listen 并不安全，因为每次 build 都会触发。
-  /// 所以这里暂时不暴露 listen，建议使用 HoneycombListener Widget。
 }
 
-/// 类似 Consumer 或 Builder，提供 WidgetRef
+/// A widget that provides a [WidgetRef] to its builder.
 class HoneycombConsumer extends StatefulWidget {
   const HoneycombConsumer({super.key, required this.builder, this.child});
 
@@ -82,38 +128,31 @@ class HoneycombConsumer extends StatefulWidget {
 
 class _HoneycombConsumerState extends State<HoneycombConsumer>
     implements WidgetRef {
-  late final HoneycombContainer _container;
+  late HoneycombContainer _container;
 
-  // 维护当前 Widget 依赖的 Atom 集合，用于清理旧订阅
-  final Set<Atom> _dependencies = {};
-  // 记录清理回调
-  final Map<Atom, VoidCallback> _disposers = {};
+  // Track dependencies to unsubscribe when they are no longer used.
+  final Map<Atom, VoidCallback> _subscriptions = {};
+  // Track dependencies used during the current build frame.
+  final Set<Atom> _dependenciesInBuild = {};
 
-  // 用来标记是否在 build 阶段
   bool _isBuilding = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // 获取最近的 Container
     _container = HoneycombScope.of(context);
+    // If container changes (rare), we might need to resubscribe everything?
+    // In this implementation, container is stable provided by _HoneycombScopeState.
+    // However, if HoneycombScope is rebuilt with a different container (not possible with current logic unless unmounted),
+    // we assume stability.
   }
 
-  /// Hot Reload 支持：重新收集依赖
+  /// Hot Reload Support
   @override
   void reassemble() {
     super.reassemble();
-    // Hot Reload 时重新订阅所有依赖
-    // 因为 Computed 的计算函数可能变了
-    _invalidateAllComputedDependencies();
-  }
-
-  /// 让所有 Computed 类型的依赖重新计算
-  void _invalidateAllComputedDependencies() {
-    // 标记需要重建
-    if (mounted) {
-      setState(() {});
-    }
+    // Force rebuild to refresh computed values or code changes
+    setState(() {});
   }
 
   @override
@@ -123,11 +162,11 @@ class _HoneycombConsumerState extends State<HoneycombConsumer>
   }
 
   void _unsubscribeAll() {
-    for (final dispose in _disposers.values) {
-      dispose();
+    for (final cancel in _subscriptions.values) {
+      cancel();
     }
-    _disposers.clear();
-    _dependencies.clear();
+    _subscriptions.clear();
+    _dependenciesInBuild.clear();
   }
 
   @override
@@ -142,72 +181,51 @@ class _HoneycombConsumerState extends State<HoneycombConsumer>
 
   @override
   T watch<T>(Atom<T> atom) {
-    // 只能在 build 期间调用
-    // 或者我们放宽限制，允许在 didChangeDependencies 等调用?
-    // 通常 watch 是为了 build 使用的。
+    // This method is called during the builder execution.
+    // 1. Mark this atom as used in current build.
+    _dependenciesInBuild.add(atom);
 
-    // 1. 注册依赖
-    if (!_dependencies.contains(atom)) {
-      // 这是一个新依赖
-      _dependencies.add(atom);
-
-      // 建立订阅
-      // 注意：StateNode 也是 Dependency，但这里我们是 Widget State。
-      // HoneycombContainer.subscribe 返回的是 cancel callback。
+    // 2. If not already subscribed, subscribe.
+    if (!_subscriptions.containsKey(atom)) {
       final cancel = _container.subscribe(atom, _onDependencyChanged);
-      _disposers[atom] = cancel;
+      _subscriptions[atom] = cancel;
     }
 
-    // 2. 返回值
     return _container.read(atom);
   }
 
   void _onDependencyChanged() {
-    // 当依赖变化时回调
-    // 如果已经在 build 中 (极其罕见，除非同步副作用)，忽略或排队
-    if (_isBuilding) {
-      return;
-    }
-
-    setState(() {
-      // 触发重建
-    });
+    // Ignore updates during build (should not happen if pure)
+    if (_isBuilding) return;
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     _isBuilding = true;
-
-    // 我们需要一种机制来检测“移除的依赖”。
-    // 简单的做法：每次 build 前清空依赖？
-    // 不，那样会导致频繁 subscribe/unsubscribe。
-    // 更好的做法：使用两套 Set (oldDependencies, newDependencies)
-
-    // 由于我们是在 builder 函数执行过程中同步收集 watch，
-    // 我们可以记录本次 build 用到的 keys。
-
-    // 备份旧的依赖列表
-    final previousDependencies = _dependencies.toSet();
-    // 清空当前依赖列表 (watch 会重新填充它)
-    _dependencies.clear();
-    // 注意：_disposers 我们先不动，等 build 完再清理多余的。
+    _dependenciesInBuild.clear(); // Reset for this frame
 
     Widget? result;
     try {
       result = widget.builder(context, this, widget.child);
     } finally {
       _isBuilding = false;
-
-      // 清理不再使用的依赖
-      for (final atom in previousDependencies) {
-        if (!_dependencies.contains(atom)) {
-          // 这个 Atom 本次 build 没用到，取消订阅
-          final cancel = _disposers.remove(atom);
-          cancel?.call();
-        }
-      }
+      _cleanupUnusedSubscriptions();
     }
-    return result;
+    return result!;
+  }
+
+  /// Remove subscriptions that were not accessed during the last build.
+  void _cleanupUnusedSubscriptions() {
+    // Identify atoms in _subscriptions that are NOT in _dependenciesInBuild
+    final unused = _subscriptions.keys
+        .where((atom) => !_dependenciesInBuild.contains(atom))
+        .toList();
+
+    for (final atom in unused) {
+      _subscriptions[atom]?.call(); // Cancel subscription
+      _subscriptions.remove(atom);
+    }
   }
 }
 

@@ -229,25 +229,25 @@ class _HoneycombConsumerState extends State<HoneycombConsumer>
   }
 }
 
-/// BuildContext 扩展，提供快捷访问
+/// BuildContext extensions for convenient access.
 extension HoneycombContextExtension on BuildContext {
-  /// 读取值 (不监听)
+  /// Read value (no subscription).
   T read<T>(Atom<T> atom) {
     return HoneycombScope.readOf(this).read(atom);
   }
 
-  /// 发送事件
+  /// Emit an effect.
   void emit<T>(Effect<T> effect, T payload) {
     HoneycombScope.readOf(this).emit(effect, payload);
   }
 
-  /// 批量更新
+  /// Batch updates.
   void batch(void Function() updates) {
     HoneycombScope.readOf(this).batch(updates);
   }
 }
 
-/// 用于监听 Effect 的 Widget
+/// Widget for listening to an Effect.
 class HoneycombListener<T> extends StatefulWidget {
   const HoneycombListener({
     super.key,

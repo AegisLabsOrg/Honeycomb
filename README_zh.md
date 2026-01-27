@@ -14,11 +14,11 @@ Honeycomb 提供清晰的 **State（状态）** 与 **Effect（事件）** 语�
 
 ## ✨ 特性
 
-- 🎯 **无 Codegen** — 纯 Dart，无需 build_runner
-- 🔄 **自动依赖追踪** — Computed 自动追踪 watch 的依赖
+- 🎯 **脱离 Context 使用** — 全局容器支持，可在纯 Dart 逻辑（Service/Repository）中读写状态
+- ⚡ **自动依赖追踪** — Computed 自动追踪 watch 的依赖，从不手动订阅
 - 📡 **State vs Effect** — 明确区分可重放状态和一次性事件
 - 🎭 **Scope/Override** — 灵活的依赖注入和局部覆盖
-- ⚡ **批量更新** — 减少不必要的重建
+- 🔄 **无需 Codegen** — 纯 Dart，无需 build_runner
 - 🔒 **类型安全** — 完整的泛型支持
 - 🧪 **易于测试** — 状态逻辑与 UI 解耦
 
@@ -63,10 +63,13 @@ final toastEffect = Effect<String>();
 ### 2. 提供容器
 
 ```dart
+// 如果不想依赖 BuildContext，也可以使用全局容器
+final appContainer = HoneycombContainer();
+
 void main() {
   runApp(
     HoneycombScope(
-      container: HoneycombContainer(),
+      container: appContainer,
       child: MyApp(),
     ),
   );
@@ -142,14 +145,63 @@ final fullName = Computed((watch) {
 
 ### Scope Override
 
+`HoneycombScope` 支持通过 `overrides` 参数在子树中覆盖状态的值。这对于测试（Mock数据）或参数化子组件非常有用。
+
+**工作原理：** 当查找某个 Atom 时，容器会优先使用 `overrides` 中提供的值；如果没找到，再向上查找父容器；最后才根据默认逻辑创建新节点。
+
 ```dart
 // 局部覆盖状态 (如测试或主题切换)
 HoneycombScope(
   overrides: [
+    // 强制把 themeState 的值锁定为 dark
     themeState.overrideWith(ThemeData.dark()),
+    
+    // 或者覆盖一个异步状态为假数据 (Mock)
+    userProfile.overrideWith(AsyncValue.data(MockUser())),
   ],
   child: DarkModePage(),
 )
+```
+
+### 在业务逻辑中使用 (脱离 Context)
+
+有时需要在 Repository、Service 或纯 Dart 逻辑中操作状态。
+
+**1. 创建全局容器实例** (建议放在 `app_globals.dart`)
+
+```dart
+// 全局单例容器
+final appContainer = HoneycombContainer();
+```
+
+**2. 在 Service 中直接使用**
+
+```dart
+class AuthService {
+  void logout() {
+    // 读取状态
+    final currentUser = appContainer.read(userState);
+    
+    // 修改状态
+    appContainer.write(userState, null);
+    
+    // 发送事件 (如通知 UI 跳转)
+    appContainer.emit(navigationEffect, '/login');
+  }
+}
+```
+
+**3. 注入到 UI 树**
+
+```dart
+void main() {
+  runApp(
+    HoneycombScope(
+      container: appContainer, // 必须注入同一个实例，UI 才能自动响应变化
+      child: MyApp(),
+    ),
+  );
+}
 ```
 
 ---

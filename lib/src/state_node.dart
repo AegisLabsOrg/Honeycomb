@@ -2,12 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'diagnostics.dart';
 import '../honeycomb.dart' show Atom;
 
-/// 依赖系统基类，用于构建响应式图
+/// Base class for the dependency system, used to build the reactive graph.
 abstract class Node {
-  /// 当本节点变化时，需要通知的下游节点
+  /// Downstream dependents to notify when this node changes.
   final Set<Dependency> _observers = {};
 
-  // 这里的 _observers 是 protect 的，子类需要能访问到
+  // _observers is protected so subclasses can access it.
   @protected
   Set<Dependency> get observers => _observers;
 
@@ -19,9 +19,9 @@ abstract class Node {
     _observers.remove(observer);
   }
 
-  /// 通知所有观察者我变了（或即使没变，版本号也变了）
+  /// Notify all observers of a change (or version change even if value same).
   void notifyObservers() {
-    // 拷贝一份，防止通知过程中依赖图变化导致并发修改异常
+    // Copy to avoid concurrent modification during graph changes.
     final listeners = _observers.toList();
     for (final observer in listeners) {
       observer.onDependencyChanged(this);
@@ -29,17 +29,17 @@ abstract class Node {
   }
 }
 
-/// 能够作为下游依赖者的接口
+/// Interface for downstream dependents.
 abstract class Dependency {
-  /// 当上游依赖发生变化时被调用
+  /// Called when an upstream dependency changes.
   void onDependencyChanged(Node dependency);
 }
 
-/// 内部使用的状态节点，真实持有数据和监听器
+/// Internal state node that holds data and listeners.
 class StateNode<T> extends Node {
   StateNode(this._value, {this.debugKey});
 
-  /// 仅用于子类延迟初始化 (Lazy)
+  /// For subclasses with lazy initialization.
   StateNode.lazy({this.debugKey}) : _isInitialized = false;
 
   final Object? debugKey;
@@ -52,8 +52,8 @@ class StateNode<T> extends Node {
 
   T get value {
     if (!_isInitialized) {
-      // 子类（如 ComputeNode）应该重写 value getter 处理懒加载
-      // 或者在使用前确保被赋值
+      // Subclasses (e.g. ComputeNode) should override value getter for lazy init
+      // or ensure it is assigned before use.
       throw StateError('StateNode accessed before initialization');
     }
     return _value;
@@ -83,7 +83,7 @@ class StateNode<T> extends Node {
     }
   }
 
-  /// 静默设置值，不触发通知 (用于 batch 模式)
+  /// Set value silently without notifications (for batch mode).
   void setValueSilently(T newValue) {
     _value = newValue;
     _isInitialized = true;
@@ -99,7 +99,7 @@ class StateNode<T> extends Node {
 
   bool get hasListeners => _listeners.isNotEmpty;
 
-  /// 是否有下游观察者（公开访问）
+  /// Whether there are downstream observers (public access).
   bool get hasObservers => _observers.isNotEmpty;
 
   void notifyListeners() {

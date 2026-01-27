@@ -1,14 +1,19 @@
 import 'package:aegis_honeycomb/honeycomb.dart';
 import 'package:flutter/material.dart';
 
+// GLOBAL CONTAINER:
+// Define a global container instance to allow access to state
+// from anywhere (services, timers, etc.) without BuildContext.
+final globalContainer = HoneycombContainer();
+
 void main() {
-  // 启用诊断日志 - 使用 PrintLogger 直接输出到终端
+  // Enable diagnostics logging - use PrintLogger to output to stdout.
   HoneycombDiagnostics.instance.enableLogging(
     customLogger: PrintLogger(),
     level: LogLevel.info,
   );
-  HoneycombDiagnostics.instance.enabled=true;
-  runApp(HoneycombScope(container: HoneycombContainer(), child: const MyApp()));
+  HoneycombDiagnostics.instance.enabled = true;
+  runApp(HoneycombScope(container: globalContainer, child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -41,13 +46,13 @@ class HomePage extends StatelessWidget {
         children: [
           _DemoTile(
             title: 'Counter',
-            subtitle: '基础 StateRef + Computed',
+            subtitle: 'Basic StateRef + Computed',
             icon: Icons.add_circle,
             onTap: () => _push(context, const CounterDemo()),
           ),
           _DemoTile(
             title: 'Todo List',
-            subtitle: 'Selector + 批量更新',
+            subtitle: 'Selector + Batch Updates',
             icon: Icons.checklist,
             onTap: () => _push(context, const TodoDemo()),
           ),
@@ -59,21 +64,27 @@ class HomePage extends StatelessWidget {
           ),
           _DemoTile(
             title: 'Effects',
-            subtitle: 'Toast / Navigation 事件',
+            subtitle: 'Toast / Navigation Events',
             icon: Icons.notifications,
             onTap: () => _push(context, const EffectDemo()),
           ),
           _DemoTile(
             title: 'Scope Override',
-            subtitle: '局部状态覆盖',
+            subtitle: 'Local State Override',
             icon: Icons.layers,
             onTap: () => _push(context, const ScopeDemo()),
           ),
           _DemoTile(
             title: 'Form Validation',
-            subtitle: 'SafeComputed 错误处理',
+            subtitle: 'SafeComputed Error Handling',
             icon: Icons.edit_note,
             onTap: () => _push(context, const FormDemo()),
+          ),
+          _DemoTile(
+            title: 'Context-Free Usage',
+            subtitle: 'Global Container Access',
+            icon: Icons.public,
+            onTap: () => _push(context, const ContextFreeDemo()),
           ),
         ],
       ),
@@ -111,7 +122,7 @@ class _DemoTile extends StatelessWidget {
 }
 
 // ============================================================
-// Demo 1: Counter - 基础 StateRef + Computed
+// Demo 1: Counter - Basic StateRef + Computed
 // ============================================================
 
 final counterState = StateRef(0);
@@ -176,7 +187,7 @@ class CounterDemo extends StatelessWidget {
 }
 
 // ============================================================
-// Demo 2: Todo List - Selector + 批量更新
+// Demo 2: Todo List - Selector + Batch Updates
 // ============================================================
 
 class Todo {
@@ -200,10 +211,10 @@ final todosState = StateRef<List<Todo>>([
   Todo(3, 'Deploy to production'),
 ]);
 
-// Selector: 只监听列表长度
+// Selector: only listen to list length.
 final todoCount = Computed((watch) => watch(todosState).length);
 
-// Selector: 只监听完成数量
+// Selector: only listen to completed count.
 final completedCount = Computed(
   (watch) => watch(todosState).where((t) => t.completed).length,
 );
@@ -217,7 +228,7 @@ class TodoDemo extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Todo Demo'),
         actions: [
-          // 显示统计，使用 Selector 优化
+          // Show summary, optimized with Selector.
           HoneycombConsumer(
             builder: (context, ref, _) {
               final total = ref.watch(todoCount);
@@ -318,10 +329,10 @@ final selectedUserId = StateRef(1);
 final userDetail = Computed.async((watch) async {
   final userId = watch(selectedUserId);
 
-  // 模拟网络请求
+  // Simulate network request.
   await Future.delayed(const Duration(seconds: 1));
 
-  // 模拟数据
+  // Mock data.
   final users = {
     1: {'name': 'Alice', 'email': 'alice@example.com'},
     2: {'name': 'Bob', 'email': 'bob@example.com'},
@@ -427,7 +438,7 @@ class AsyncDemo extends StatelessWidget {
 }
 
 // ============================================================
-// Demo 4: Effects - Toast / Navigation 事件
+// Demo 4: Effects - Toast / Navigation Events
 // ============================================================
 
 final toastEffect = Effect<String>(
@@ -503,7 +514,7 @@ class EffectDemo extends StatelessWidget {
 }
 
 // ============================================================
-// Demo 5: Scope Override - 局部状态覆盖
+// Demo 5: Scope Override - Local State Override
 // ============================================================
 
 final themeColorState = StateRef(Colors.blue);
@@ -517,14 +528,14 @@ class ScopeDemo extends StatelessWidget {
       appBar: AppBar(title: const Text('Scope Override Demo')),
       body: Column(
         children: [
-          // 全局主题色
+          // Global theme color.
           Expanded(
             child: _ColoredSection(title: 'Global Scope', showButtons: true),
           ),
 
           const Divider(height: 1),
 
-          // 局部 Override - 强制红色
+          // Local override - force red.
           Expanded(
             child: HoneycombScope(
               overrides: [themeColorState.overrideWith(Colors.red)],
@@ -537,7 +548,7 @@ class ScopeDemo extends StatelessWidget {
 
           const Divider(height: 1),
 
-          // 局部 Override - 强制绿色
+          // Local override - force green.
           Expanded(
             child: HoneycombScope(
               overrides: [themeColorState.overrideWith(Colors.green)],
@@ -614,13 +625,13 @@ class _ColoredSection extends StatelessWidget {
 }
 
 // ============================================================
-// Demo 6: Form Validation - SafeComputed 错误处理
+// Demo 6: Form Validation - SafeComputed Error Handling
 // ============================================================
 
 final emailState = StateRef('');
 final passwordState = StateRef('');
 
-// SafeComputed: 自动捕获异常
+// SafeComputed: automatically captures exceptions.
 final emailValidation = SafeComputed<String>((watch) {
   final email = watch(emailState);
   if (email.isEmpty) throw FormatException('Email is required');
@@ -639,7 +650,7 @@ final passwordValidation = SafeComputed<String>((watch) {
   return password;
 });
 
-// 表单整体是否有效
+// Whether the form is valid overall.
 final isFormValid = Computed((watch) {
   final email = watch(emailValidation);
   final password = watch(passwordValidation);
@@ -666,7 +677,7 @@ class FormDemo extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            // Email field
+            // Email field.
             HoneycombConsumer(
               builder: (context, ref, _) {
                 final validation = ref.watch(emailValidation);
@@ -695,7 +706,7 @@ class FormDemo extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Password field
+            // Password field.
             HoneycombConsumer(
               builder: (context, ref, _) {
                 final validation = ref.watch(passwordValidation);
@@ -725,7 +736,7 @@ class FormDemo extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            // Submit button
+            // Submit button.
             HoneycombConsumer(
               builder: (context, ref, _) {
                 final valid = ref.watch(isFormValid);
@@ -744,6 +755,78 @@ class FormDemo extends StatelessWidget {
                   child: const Text('Submit'),
                 );
               },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Demo 7: Context-Free Usage - Global Container
+// ============================================================
+
+final globalCounterState = StateRef(0);
+
+// Simulate a pure Dart service or background task.
+// No BuildContext is needed here.
+void backgroundIncrement() {
+  debugPrint('Service: Updating state via globalContainer...');
+  final current = globalContainer.read(globalCounterState);
+  globalContainer.write(globalCounterState, current + 1);
+}
+
+class ContextFreeDemo extends StatelessWidget {
+  const ContextFreeDemo({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Context-Free Demo')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'This counter is updated by a standalone function '
+                'that references the globalContainer directly, '
+                'without using BuildContext.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            ),
+            const SizedBox(height: 48),
+            HoneycombConsumer(
+              builder: (context, ref, _) {
+                final count = ref.watch(globalCounterState);
+                return Text(
+                  'Global Count: $count',
+                  style: const TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.flash_on),
+              label: const Text('Increment via Service'),
+              onPressed: backgroundIncrement,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '(Check console logs)',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),

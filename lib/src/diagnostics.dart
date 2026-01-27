@@ -1,10 +1,10 @@
 import 'dart:developer' as developer;
 import '../honeycomb.dart';
 
-/// 日志级别
+/// Log level.
 enum LogLevel { debug, info, warning, error }
 
-/// 可插拔的 Logger 接口
+/// Pluggable logger interface.
 abstract class HoneycombLogger {
   void log(
     LogLevel level,
@@ -14,7 +14,7 @@ abstract class HoneycombLogger {
   });
 }
 
-/// 默认 Logger - 使用 dart:developer
+/// Default logger using dart:developer.
 class DeveloperLogger implements HoneycombLogger {
   @override
   void log(
@@ -46,7 +46,7 @@ class DeveloperLogger implements HoneycombLogger {
   }
 }
 
-/// 静默 Logger - 不输出任何内容
+/// Silent logger (no output).
 class SilentLogger implements HoneycombLogger {
   @override
   void log(
@@ -57,7 +57,7 @@ class SilentLogger implements HoneycombLogger {
   }) {}
 }
 
-/// 控制台 Logger - 直接 print 到终端
+/// Console logger (prints to stdout).
 class PrintLogger implements HoneycombLogger {
   @override
   void log(
@@ -93,7 +93,7 @@ class PrintLogger implements HoneycombLogger {
   }
 }
 
-/// 重算原因
+/// Recompute reason.
 class RecomputeReason {
   RecomputeReason({
     required this.atom,
@@ -103,19 +103,19 @@ class RecomputeReason {
     this.oldValue,
   });
 
-  /// 被重算的 Atom
+  /// Atom being recomputed.
   final Atom atom;
 
-  /// 导致重算的上游依赖
+  /// Upstream dependencies that caused recompute.
   final List<Atom> changedDependencies;
 
-  /// 重算耗时
+  /// Recompute duration.
   final Duration duration;
 
-  /// 新值
+  /// New value.
   final dynamic newValue;
 
-  /// 旧值 (可能为 null)
+  /// Old value (may be null).
   final dynamic oldValue;
 
   @override
@@ -129,7 +129,7 @@ class RecomputeReason {
   }
 }
 
-/// 状态变更事件
+/// State change event.
 class StateChangeEvent {
   StateChangeEvent({
     required this.atom,
@@ -149,7 +149,7 @@ class StateChangeEvent {
   }
 }
 
-/// Dirty 传播事件
+/// Dirty propagation event.
 class DirtyPropagationEvent {
   DirtyPropagationEvent({
     required this.source,
@@ -157,10 +157,10 @@ class DirtyPropagationEvent {
     required this.timestamp,
   });
 
-  /// 触发传播的源 Atom
+  /// Source atom that triggered propagation.
   final Atom source;
 
-  /// 被标记为 dirty 的下游节点
+  /// Downstream nodes marked dirty.
   final List<Atom> affectedNodes;
 
   final DateTime timestamp;
@@ -171,36 +171,36 @@ class DirtyPropagationEvent {
   }
 }
 
-/// 可观测性钩子回调类型
+/// Observability hook callback types.
 typedef OnRecompute = void Function(RecomputeReason reason);
 typedef OnStateChange = void Function(StateChangeEvent event);
 typedef OnDirtyPropagation = void Function(DirtyPropagationEvent event);
 
-/// 全局诊断配置
+/// Global diagnostics configuration.
 class HoneycombDiagnostics {
   HoneycombDiagnostics._();
 
   static final instance = HoneycombDiagnostics._();
 
-  /// 是否启用诊断 (默认关闭)
+  /// Whether diagnostics are enabled (default: off).
   bool enabled = false;
 
-  /// 可插拔的 Logger (默认使用 dart:developer)
+  /// Pluggable logger (defaults to dart:developer).
   HoneycombLogger logger = DeveloperLogger();
 
-  /// 最小日志级别
+  /// Minimum log level.
   LogLevel minLevel = LogLevel.debug;
 
-  /// 重算回调
+  /// Recompute callbacks.
   final List<OnRecompute> _onRecomputeListeners = [];
 
-  /// 状态变更回调
+  /// State change callbacks.
   final List<OnStateChange> _onStateChangeListeners = [];
 
-  /// Dirty 传播回调
+  /// Dirty propagation callbacks.
   final List<OnDirtyPropagation> _onDirtyPropagationListeners = [];
 
-  /// 添加重算监听
+  /// Add recompute listener.
   void addRecomputeListener(OnRecompute listener) {
     _onRecomputeListeners.add(listener);
   }
@@ -209,7 +209,7 @@ class HoneycombDiagnostics {
     _onRecomputeListeners.remove(listener);
   }
 
-  /// 添加状态变更监听
+  /// Add state change listener.
   void addStateChangeListener(OnStateChange listener) {
     _onStateChangeListeners.add(listener);
   }
@@ -218,7 +218,7 @@ class HoneycombDiagnostics {
     _onStateChangeListeners.remove(listener);
   }
 
-  /// 添加 Dirty 传播监听
+  /// Add dirty propagation listener.
   void addDirtyPropagationListener(OnDirtyPropagation listener) {
     _onDirtyPropagationListeners.add(listener);
   }
@@ -227,7 +227,7 @@ class HoneycombDiagnostics {
     _onDirtyPropagationListeners.remove(listener);
   }
 
-  /// 通知重算事件 (内部调用)
+  /// Notify recompute (internal).
   void notifyRecompute(RecomputeReason reason) {
     if (!enabled) return;
     for (final listener in _onRecomputeListeners) {
@@ -235,7 +235,7 @@ class HoneycombDiagnostics {
     }
   }
 
-  /// 通知状态变更事件 (内部调用)
+  /// Notify state change (internal).
   void notifyStateChange(StateChangeEvent event) {
     if (!enabled) return;
     for (final listener in _onStateChangeListeners) {
@@ -243,7 +243,7 @@ class HoneycombDiagnostics {
     }
   }
 
-  /// 通知 Dirty 传播事件 (内部调用)
+  /// Notify dirty propagation (internal).
   void notifyDirtyPropagation(DirtyPropagationEvent event) {
     if (!enabled) return;
     for (final listener in _onDirtyPropagationListeners) {
@@ -251,14 +251,14 @@ class HoneycombDiagnostics {
     }
   }
 
-  /// 清除所有监听器
+  /// Clear all listeners.
   void clearAllListeners() {
     _onRecomputeListeners.clear();
     _onStateChangeListeners.clear();
     _onDirtyPropagationListeners.clear();
   }
 
-  /// 内部日志方法
+  /// Internal logging helper.
   void _log(
     LogLevel level,
     String message, {
@@ -269,7 +269,7 @@ class HoneycombDiagnostics {
     logger.log(level, message, error: error, stackTrace: stackTrace);
   }
 
-  /// 启用日志记录 (使用可配置的 Logger)
+  /// Enable logging (with configurable logger).
   void enableLogging({HoneycombLogger? customLogger, LogLevel? level}) {
     enabled = true;
     if (customLogger != null) logger = customLogger;
@@ -297,7 +297,7 @@ class HoneycombDiagnostics {
     });
   }
 
-  /// 禁用所有日志
+  /// Disable all logging.
   void disableLogging() {
     enabled = false;
     logger = SilentLogger();

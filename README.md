@@ -14,11 +14,11 @@ Honeycomb provides clear separation between **State** and **Effect** semantics, 
 
 ## ✨ Features
 
-- 🎯 **No Codegen** — Pure Dart, no build_runner required.
-- 🔄 **Auto Dependency Tracking** — Computed automatically tracks dependencies from `watch`.
+- 🎯 **Context-Free Usage** — Access state in pure Dart logic (Services/Repositories) via Global Container.
+- ⚡ **Auto Dependency Tracking** — Computed automatically tracks dependencies from `watch`.
 - 📡 **State vs Effect** — Clearly distinguish between replayable state and one-time events.
 - 🎭 **Scope/Override** — Flexible dependency injection and local overrides.
-- ⚡ **Batch Updates** — Reduce unnecessary rebuilds by batching changes.
+- 🔄 **No Codegen** — Pure Dart, no build_runner required.
 - 🔒 **Type Safe** — Full generic support.
 - 🧪 **Easy to Test** — Decouple state logic from UI for easy testing.
 
@@ -63,10 +63,13 @@ final toastEffect = Effect<String>();
 ### 2. Provide Container
 
 ```dart
+// You can keep a global container if you don't want to rely on BuildContext.
+final appContainer = HoneycombContainer();
+
 void main() {
   runApp(
     HoneycombScope(
-      container: HoneycombContainer(),
+      container: appContainer,
       child: MyApp(),
     ),
   );
@@ -142,14 +145,63 @@ final fullName = Computed((watch) {
 
 ### Scope Override
 
+`HoneycombScope` supports overriding state values in a subtree using the `overrides` parameter. This is extremely useful for testing (Mocking) or parameterizing child components.
+
+**How it works:** When resolving an Atom, the container first checks if it's in `overrides`; if not, it looks up the parent container; finally, it creates a new node based on the default logic.
+
 ```dart
 // Locally override state (e.g., for testing or theme switching)
 HoneycombScope(
   overrides: [
+    // Force themeState to be dark
     themeState.overrideWith(ThemeData.dark()),
+
+    // Or override an async state with mock data
+    userProfile.overrideWith(AsyncValue.data(MockUser())),
   ],
   child: DarkModePage(),
 )
+```
+
+### Using in Business Logic (Outside Context)
+
+Sometimes you need to access state in Repositories, Services, or pure Dart logic.
+
+**1. Create a Global Container** (e.g. in `app_globals.dart`)
+
+```dart
+// Global singleton container
+final appContainer = HoneycombContainer();
+```
+
+**2. Use directly in Services**
+
+```dart
+class AuthService {
+  void logout() {
+    // Read state
+    final currentUser = appContainer.read(userState);
+    
+    // Write state
+    appContainer.write(userState, null);
+    
+    // Emit event
+    appContainer.emit(navigationEffect, '/login');
+  }
+}
+```
+
+**3. Inject into UI Tree**
+
+```dart
+void main() {
+  runApp(
+    HoneycombScope(
+      container: appContainer, // Must inject the same instance for UI updates
+      child: MyApp(),
+    ),
+  );
+}
 ```
 
 ---

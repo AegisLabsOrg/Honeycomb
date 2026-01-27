@@ -3,17 +3,17 @@ import 'dart:collection';
 import '../honeycomb.dart';
 import 'diagnostics.dart';
 
-/// 带时间戳的事件，用于 TTL 策略
+/// Timestamped event for TTL strategy.
 class _TimestampedEvent<T> {
   _TimestampedEvent(this.payload, this.timestamp);
   final T payload;
   final DateTime timestamp;
 }
 
-/// 负责管理 Effect 的事件流
+/// Manages the Effect event stream.
 class EffectNode<T> {
   EffectNode(this.effect) {
-    // 根据策略初始化
+    // Initialize buffers based on strategy.
     if (effect.strategy == EffectStrategy.bufferN) {
       _buffer = Queue<T>();
     } else if (effect.strategy == EffectStrategy.ttl) {
@@ -23,13 +23,13 @@ class EffectNode<T> {
 
   final Effect<T> effect;
 
-  // 使用 broadcast 流，允许多个监听者 (如 UI 展示 Toast，同时也打 Log)
+  // Use a broadcast stream to allow multiple listeners (e.g. UI toast + logs).
   final StreamController<T> _controller = StreamController<T>.broadcast();
 
-  // bufferN 策略的缓冲区
+  // Buffer for bufferN strategy.
   Queue<T>? _buffer;
 
-  // ttl 策略的带时间戳缓冲区
+  // Timestamped buffer for TTL strategy.
   Queue<_TimestampedEvent<T>>? _ttlBuffer;
 
   void emit(T payload) {
@@ -44,36 +44,36 @@ class EffectNode<T> {
 
     switch (effect.strategy) {
       case EffectStrategy.drop:
-        // 只有有监听者时才发送
+        // Only emit when there is a listener.
         if (_controller.hasListener) {
           _controller.add(payload);
         }
-        // 无监听者则丢弃
+        // Drop if no listeners.
         break;
 
       case EffectStrategy.bufferN:
-        // 无论是否有监听者都加入缓冲区
+        // Always add to buffer, regardless of listeners.
         if (_buffer != null) {
           _buffer!.add(payload);
-          // 保持缓冲区大小
+          // Keep buffer size bounded.
           while (_buffer!.length > effect.bufferSize) {
             _buffer!.removeFirst();
           }
         }
-        // 如果有监听者，也发送
+        // Also emit if there are listeners.
         if (_controller.hasListener) {
           _controller.add(payload);
         }
         break;
 
       case EffectStrategy.ttl:
-        // 加入带时间戳的缓冲区
+        // Add to timestamped buffer.
         if (_ttlBuffer != null) {
           _ttlBuffer!.add(_TimestampedEvent(payload, DateTime.now()));
-          // 清理过期事件
+          // Clean expired events.
           _cleanExpiredEvents();
         }
-        // 如果有监听者，也发送
+        // Also emit if there are listeners.
         if (_controller.hasListener) {
           _controller.add(payload);
         }
@@ -81,9 +81,9 @@ class EffectNode<T> {
     }
   }
 
-  /// 订阅事件流 (会先重放缓冲区中的事件)
+  /// Subscribe to the event stream (replays buffered events first).
   StreamSubscription<T> listen(void Function(T) callback) {
-    // 先重放缓冲区
+    // Replay buffer first.
     if (effect.strategy == EffectStrategy.bufferN && _buffer != null) {
       for (final event in _buffer!) {
         callback(event);
@@ -95,13 +95,13 @@ class EffectNode<T> {
       }
     }
 
-    // 然后订阅后续事件
+    // Then subscribe to subsequent events.
     return _controller.stream.listen(callback);
   }
 
   Stream<T> get stream => _controller.stream;
 
-  /// 清理过期的 TTL 事件
+  /// Clean expired TTL events.
   void _cleanExpiredEvents() {
     if (_ttlBuffer == null) return;
 

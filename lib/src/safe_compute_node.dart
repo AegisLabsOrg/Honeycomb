@@ -2,7 +2,7 @@ import '../honeycomb.dart';
 import 'state_node.dart';
 import 'compute_node.dart';
 
-/// 安全的 Computed 节点，异常会被捕获并封装为 Result.failure
+/// Safe Computed node; exceptions are captured and wrapped as Result.failure.
 class SafeComputeNode<T> extends StateNode<Result<T>> implements Dependency {
   SafeComputeNode(this._container, this._computeFn, {super.debugKey})
     : super.lazy() {
@@ -15,7 +15,7 @@ class SafeComputeNode<T> extends StateNode<Result<T>> implements Dependency {
   final Set<Node> _dependencies = {};
   bool _isDirty = false;
 
-  /// 手动标记为脏 (用于 Hot Reload)
+  /// Manually mark dirty (for Hot Reload).
   void markDirty() {
     _isDirty = true;
   }
@@ -55,7 +55,7 @@ class SafeComputeNode<T> extends StateNode<Result<T>> implements Dependency {
       }
       _dependencies.clear();
 
-      // 捕获异常
+      // Capture exceptions.
       Result<T> newValue;
       try {
         final computed = _computeFn(<R>(Atom<R> atom) {

@@ -2,40 +2,41 @@ import '../honeycomb.dart';
 import 'state_node.dart';
 import 'compute_node.dart';
 
-/// 急切求值的 Computed 节点
-/// 与普通 ComputeNode 不同，上游变化时立即重算，即使没有订阅者
+/// Eagerly evaluated Computed node.
+/// Unlike ComputeNode, it recomputes immediately on upstream changes,
+/// even without subscribers.
 class EagerComputeNode<T> extends StateNode<T> implements Dependency {
   EagerComputeNode(this._container, this._computeFn, {super.debugKey})
     : super.lazy() {
-    // 立即计算初始值
+    // Compute initial value immediately.
     _recompute();
   }
 
   final HoneycombContainer _container;
   final T Function(WatchFn watch) _computeFn;
 
-  /// 当前这一轮计算依赖的上游节点
+  /// Dependencies used in the current computation.
   final Set<Node> _dependencies = {};
 
-  /// 手动标记为脏并重算 (用于 Hot Reload)
+  /// Manually mark dirty and recompute (for Hot Reload).
   void markDirty() {
     _recompute();
   }
 
   @override
   T get value {
-    // Eager 模式下值总是最新的，直接返回
+    // In eager mode, value is always up to date.
     return super.value;
   }
 
   @override
   void onDependencyChanged(Node dependency) {
-    // Eager 模式：无论是否有监听者，立即重算
+    // Eager mode: recompute immediately regardless of listeners.
     _recompute();
   }
 
   void _recompute() {
-    // 循环依赖检测 (复用 ComputeNode 的检测机制)
+    // Circular dependency detection (reuse ComputeNode stack).
     if (computingStack.contains(this)) {
       throw CircularDependencyError(
         'Detected circular dependency while computing. '
@@ -48,13 +49,13 @@ class EagerComputeNode<T> extends StateNode<T> implements Dependency {
     computingStack.add(this);
 
     try {
-      // 清理旧依赖的订阅关系
+      // Clear old dependency subscriptions.
       for (final dep in _dependencies) {
         dep.removeObserver(this);
       }
       _dependencies.clear();
 
-      // 执行计算函数
+      // Execute compute function.
       final newValue = _computeFn(<R>(Atom<R> atom) {
         final node = _container.internalGetNode(atom);
         if (_dependencies.add(node)) {
@@ -63,11 +64,11 @@ class EagerComputeNode<T> extends StateNode<T> implements Dependency {
         return node.value;
       });
 
-      // 更新值并通知 (即使没人监听也要更新内部值)
+      // Update value and notify (even if no listeners, keep internal value fresh).
       if (!isInitialized || newValue != super.value) {
         super.value = newValue;
       } else {
-        // 值没变但需要标记为已初始化
+        // Value unchanged but ensure initialized.
         if (!isInitialized) {
           setValueSilently(newValue);
         }

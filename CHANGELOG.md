@@ -1,3 +1,9 @@
+## 1.0.3
+
+- **Docs**: Translated source code comments and example comments to English.
+- **Docs**: Updated README to highlight "Context-Free Usage" and "Global Container" patterns.
+- **Example**: Added `ContextFreeDemo` to example app.
+
 ## 1.0.2
 
 - **Feature**: Enhanced Observability completely instrumented.

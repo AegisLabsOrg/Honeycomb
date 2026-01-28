@@ -1,6 +1,6 @@
 name: aegis_honeycomb
 description: "A simple, type-safe, codegen-free Flutter state management library with clear State/Effect separation, auto dependency tracking, and powerful Scope/Override mechanism."
-version: 1.0.2
+version: 1.0.3
 homepage: https://github.com/AegisLabsOrg/Honeycomb
 repository: https://github.com/AegisLabsOrg/Honeycomb
 issue_tracker: https://github.com/AegisLabsOrg/Honeycomb/issues

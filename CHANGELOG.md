@@ -1,3 +1,8 @@
+## 1.1.1
+
+- **Feature**: Added `update` method to `HoneycombContainer` for easier functional state updates (highly recommended for immutable updates to `List`, `Map`, etc.).
+- **Docs**: Added a dedicated section in README on how to correctly perform immutable updates with collections.
+
 ## 1.1.0
 
 - **Breaking Change / Architecture Upgrade**: Implemented true Push-Pull reactivity model for `Computed` and `SafeComputed` nodes.

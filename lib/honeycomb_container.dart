@@ -199,6 +199,13 @@ class HoneycombContainer {
     }
   }
 
+  /// 方便地基于当前值进行更新，特别适用于 List/Map 或需要计算的场景。
+  /// 请确保返回的是一个全新的对象（不可变更新），而不要直接在原对象上修改。
+  /// 示例: `container.update(todos, (old) => [...old, newTodo])`
+  void update<T>(StateRef<T> ref, T Function(T state) updater) {
+    write(ref, updater(read(ref)));
+  }
+
   /// 批量更新：在回调执行期间，所有 write 的通知会被延迟到最后一次性触发
   void batch(void Function() updates) {
     if (_isBatching) {

@@ -156,11 +156,34 @@ HoneycombScope(
     // 强制把 themeState 的值锁定为 dark
     themeState.overrideWith(ThemeData.dark()),
     
-    // 或者覆盖一个异步状态为假数据 (Mock)
+    // Or override an async state with mock data
     userProfile.overrideWith(AsyncValue.data(MockUser())),
   ],
   child: DarkModePage(),
 )
+```
+
+### 处理集合类型 (List / Map) 的不可变更新
+
+在 Honeycomb（以及绝大多数现代响应式框架中），更新 `List` 或 `Map` 等集合类型时，**不要原地修改**（例如 `list.add()`），因为这不会改变对象的内存引用（`oldValue != newValue` 判定为 `false`），从而导致 UI 无法触发更新。
+
+**正确姿势：** 应该通过复制创建全新的集合，推荐使用 `container.update` 语法糖与 Spread（扩展）操作符 `...`：
+
+```dart
+// ❌ 错误示范：原地修改（引用未变，不会触发更新）
+final currentTodos = container.read(todosRef);
+currentTodos.add(newTodo);
+container.write(todosRef, currentTodos);
+
+// ✅ 正确示范：使用 update 与 ... 操作符实现不可变更新
+container.update(todosRef, (todos) => [...todos, newTodo]); // 增
+container.update(todosRef, (todos) => todos.where((e) => e.id != id).toList()); // 删
+
+// Map 更新也是同理：
+container.update(userRolesRef, (roles) => {
+  ...roles,
+  'admin': true, // 新增或覆盖 key
+});
 ```
 
 ### 架构解析：一次状态更新的完整生命周期

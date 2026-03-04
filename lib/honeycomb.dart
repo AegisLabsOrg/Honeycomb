@@ -23,8 +23,10 @@ abstract class AtomVisitor<R> {
   R visitAsyncComputed<T>(AsyncComputed<T> atom);
   R visitEagerComputed<T>(EagerComputed<T> atom);
   R visitSafeComputed<T>(SafeComputed<T> atom);
-  // Effect 通常不走 _getNode 创建 StateNode，所以可能不需要 visitEffect？
-  // 但为了完整性...
+
+  /// 注意：Effect 属于一次性事件流（Event Stream），实际挂载和分发由容器内部的 `_effectNodes` 独立管理。
+  /// 它在运行期绝不会像正常的 State/Computed 那样通过 `_getNode` 和 Visitor 模式去创建 `StateNode`。
+  /// 此处保留该方法，纯粹为了满足 [Atom] 接口的向下兼容与 `accept` 方法多态分派的结构完整性。
   R visitEffect<T>(Effect<T> atom);
 }
 

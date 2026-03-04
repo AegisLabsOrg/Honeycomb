@@ -163,6 +163,16 @@ HoneycombScope(
 )
 ```
 
+### 架构解析：一次状态更新的完整生命周期
+
+Honeycomb 采用 **Push-Pull（推拉结合）** 的响应式模型，并运用了多种经典设计模式。当执行如 `container.write(stateRef, 1)`（状态由 0 变 1）时，发生了以下 5 个阶段：
+
+1. **触发更新与享元模式 (Flyweight)**：调用 `write` 时，容器在内部 `_nodes` 字典中查找 Atom 对应的 `StateNode` 实例。这保证了相同的定义始终命中同一个状态节点（享元缓存）。
+2. **节点创建与访问者模式 (Visitor)**：如果节点尚未创建，容器通过 `_NodeCreator` 执行 **访问者模式** 双重分派（`Atom.accept(visitor)`）。底层无需繁复的类型判断，直接为 `StateRef` 映射新建 `StateNode`。
+3. **推阶段 (Push - Observer)**：节点值更新后，通过 **观察者模式** 遍历所有依赖它的子节点（`ComputeNode` 或 UI 订阅者），向它们发送 `markDirty()` 信号。此处**只标脏，不计算**，彻底解决了菱形依赖（Diamond Dependency）带来的冗余计算问题。
+4. **UI 桥接 (Adapter)**：`HoneycombConsumer` 作为订阅者收到脏信号，通过适配器桥接触发自身的 `setState(() {})`，通知 Flutter 引擎在该局部作用域发起重绘排期。
+5. **拉阶段 (Pull - Lazy Evaluation)**：Flutter 在下一帧触发 build，UI 调用 `watch(state)` 获取新值。遇到脏标记的节点时，此时才真正进行**惰性求值 (Pull)** 和依赖关系的重新收集。
+
 ### 在业务逻辑中使用 (脱离 Context)
 
 有时需要在 Repository、Service 或纯 Dart 逻辑中操作状态。

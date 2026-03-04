@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 import '../honeycomb.dart';
-import 'diagnostics.dart';
 
 /// Timestamped event for TTL strategy.
 class _TimestampedEvent<T> {

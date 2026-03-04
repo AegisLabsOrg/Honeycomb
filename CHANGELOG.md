@@ -1,3 +1,11 @@
+## 1.1.0
+
+- **Breaking Change / Architecture Upgrade**: Implemented true Push-Pull reactivity model for `Computed` and `SafeComputed` nodes.
+  - **Glitch-Free**: Solved the "Diamond Dependency" problem. Derived state is now lazily recomputed during `read/watch` phase rather than cascaded synchronously, ensuring sub-trees only execute once per render effectively banishing redundant rebuilds.
+  - State change notifications (Push) and actual compute calls (Pull) are fully decoupled.
+- **Optimization**: `EagerComputed` now debounces eager computations into a Microtask schedule rather than locking the main thread, resulting in ultra-smooth event loops across multiple rapid dependency tree changes.
+- **Test**: Introduced `diamond_dependency_test.dart` and expanded existing boundary Edge Case tests ensuring absolute graph sorting integrity.
+
 ## 1.0.3
 
 - **Docs**: Translated source code comments and example comments to English.

@@ -163,6 +163,16 @@ HoneycombScope(
 )
 ```
 
+### Architecture Breakdown: The Complete Lifecycle of a State Update
+
+Honeycomb uses a **Push-Pull** reactive model and employs several classic design patterns. When you execute something like `container.write(stateRef, 1)` (state changes from 0 to 1), the following 5 phases occur:
+
+1. **Trigger Update & Flyweight Pattern**: When calling `write`, the container looks up the corresponding `StateNode` instance for the Atom in its internal `_nodes` dictionary. This ensures the same definition always hits the same state node (flyweight caching).
+2. **Node Creation & Visitor Pattern**: If the node doesn't exist yet, the container uses `_NodeCreator` to perform a double dispatch via the **Visitor Pattern** (`Atom.accept(visitor)`). This directly creates a new `StateNode` tailored for the `StateRef` without cumbersome type checks under the hood.
+3. **Push Phase (Observer)**: After the node's value is updated, it uses the **Observer Pattern** to iterate through all its dependent child nodes (`ComputeNode` or UI subscribers) and sends them a `markDirty()` signal. This step **only marks as dirty, but does not compute**, completely resolving redundant calculations caused by Diamond Dependencies.
+4. **UI Bridge (Adapter)**: `HoneycombConsumer`, acting as a subscriber, receives the dirty signal and triggers its own `setState(() {})` via an adapter bridge. This notifies the Flutter engine to schedule a repaint in that local scope.
+5. **Pull Phase (Lazy Evaluation)**: In the next frame, Flutter triggers a `build`, and the UI calls `watch(state)` to get the new value. When a node with a dirty mark is encountered, it finally performs **Lazy Evaluation (Pull)** and re-collects its dependencies.
+
 ### Using in Business Logic (Outside Context)
 
 Sometimes you need to access state in Repositories, Services, or pure Dart logic.

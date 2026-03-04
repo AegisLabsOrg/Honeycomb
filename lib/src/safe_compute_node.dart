@@ -32,9 +32,10 @@ class SafeComputeNode<T> extends StateNode<Result<T>> implements Dependency {
   void onDependencyChanged(Node dependency) {
     if (!_isDirty) {
       _isDirty = true;
-      if (hasListeners || observers.isNotEmpty) {
-        _recompute();
-      }
+      // Push: Notify downstream that this node is dirty.
+      notifyObservers();
+      // Notify UI listeners to schedule a rebuild.
+      notifyListeners();
     }
   }
 
@@ -71,7 +72,7 @@ class SafeComputeNode<T> extends StateNode<Result<T>> implements Dependency {
       }
 
       if (!isInitialized || newValue != super.value) {
-        super.value = newValue;
+        setValueSilently(newValue);
       }
 
       _isDirty = false;

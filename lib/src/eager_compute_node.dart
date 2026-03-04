@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../honeycomb.dart';
 import 'state_node.dart';
 import 'compute_node.dart';
@@ -18,21 +20,42 @@ class EagerComputeNode<T> extends StateNode<T> implements Dependency {
   /// Dependencies used in the current computation.
   final Set<Node> _dependencies = {};
 
+  bool _isDirty = false;
+  bool _isScheduled = false;
+
   /// Manually mark dirty and recompute (for Hot Reload).
   void markDirty() {
+    _isDirty = true;
     _recompute();
   }
 
   @override
   T get value {
-    // In eager mode, value is always up to date.
+    if (_isDirty) {
+      _recompute();
+    }
     return super.value;
   }
 
   @override
   void onDependencyChanged(Node dependency) {
-    // Eager mode: recompute immediately regardless of listeners.
-    _recompute();
+    if (!_isDirty) {
+      _isDirty = true;
+      // Push: Notify downstream that this node is dirty.
+      notifyObservers();
+      // Notify UI listeners to schedule a rebuild.
+      notifyListeners();
+    }
+
+    if (!_isScheduled) {
+      _isScheduled = true;
+      scheduleMicrotask(() {
+        if (_isDirty) {
+          _recompute();
+        }
+        _isScheduled = false;
+      });
+    }
   }
 
   void _recompute() {
@@ -66,13 +89,15 @@ class EagerComputeNode<T> extends StateNode<T> implements Dependency {
 
       // Update value and notify (even if no listeners, keep internal value fresh).
       if (!isInitialized || newValue != super.value) {
-        super.value = newValue;
+        setValueSilently(newValue);
       } else {
         // Value unchanged but ensure initialized.
         if (!isInitialized) {
           setValueSilently(newValue);
         }
       }
+
+      _isDirty = false;
     } finally {
       computingStack.remove(this);
       ComputeNode.currentlyComputingNode = previousNode;

@@ -337,7 +337,7 @@ void main() {
           child: HoneycombScope(
             child: HoneycombListener<int>(
               effect: effect,
-              onEvent: (_, __) {},
+              onEvent: (ctx, payload) {},
               child: const Text('Hello'),
             ),
           ),

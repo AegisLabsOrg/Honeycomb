@@ -1,6 +1,5 @@
 import '../honeycomb.dart';
 import 'state_node.dart';
-import 'diagnostics.dart';
 
 /// Global: the Computed node currently being evaluated.
 /// Used to capture dependencies during `watch()`.
@@ -74,18 +73,11 @@ class ComputeNode<T> extends StateNode<T> implements Dependency {
 
     if (!_isDirty) {
       _isDirty = true;
-      // Notify downstream: I may have changed (even before recompute).
-      // Strategy:
-      // - If I have listeners (UI), recompute immediately to check for changes.
-      // - If no listeners (lazy), just mark dirty and recompute on next read.
-
-      if (hasListeners || observers.isNotEmpty) {
-        // Eager mode: must recompute to notify UI.
-        _recompute();
-      } else {
-        // Lazy mode: mark dirty only; downstream isn't listening either.
-        // Next read will see the dirty flag.
-      }
+      // Push: Notify downstream that this node is dirty.
+      // Real recomputation (Pull) will happen lazily when `value` is read.
+      notifyObservers();
+      // Notify UI listeners to schedule a rebuild.
+      notifyListeners();
     }
   }
 
@@ -146,7 +138,10 @@ class ComputeNode<T> extends StateNode<T> implements Dependency {
 
       // Update value.
       if (!isInitialized || newValue != super.value) {
-        super.value = newValue;
+        // We use setValueSilently because we ALREADY sent the dirty notifications
+        // synchronously in onDependencyChanged (Push phase). If we call `super.value = ...`
+        // here, it would trigger a duplicate cascade of useless notifications.
+        setValueSilently(newValue);
       }
 
       // Mark clean regardless of value change.

@@ -1,3 +1,8 @@
+## 1.1.2
+
+- **Docs**: Added Claude Code skill integration section to README and README_zh.
+  Install the official skill with `claude plugin install github:AegisLabsOrg/honeycomb-skill`.
+
 ## 1.1.1
 
 - **Feature**: Added `update` method to `HoneycombContainer` for easier functional state updates (highly recommended for immutable updates to `List`, `Map`, etc.).

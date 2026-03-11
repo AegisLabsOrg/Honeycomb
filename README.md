@@ -246,6 +246,26 @@ test('counter increments', () {
 
 ---
 
+## 🤖 Claude Code Integration
+
+Use Honeycomb with [Claude Code](https://claude.ai/claude-code) to automatically generate idiomatic Honeycomb code.
+
+Install the official Honeycomb skill:
+
+```bash
+claude plugin install github:AegisLabsOrg/honeycomb-skill
+```
+
+Once installed, just describe what you need:
+
+```
+/honeycomb create a shopping cart state with add item and total price
+```
+
+Claude will generate correct `StateRef`, `Computed`, `Effect`, service layer, and UI code following Honeycomb best practices.
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please check [CONTRIBUTING.md](CONTRIBUTING.md).

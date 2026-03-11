@@ -269,6 +269,26 @@ test('counter increments', () {
 
 ---
 
+## 🤖 Claude Code 集成
+
+配合 [Claude Code](https://claude.ai/claude-code) 使用，可以自动生成符合 Honeycomb 规范的代码。
+
+安装官方 Honeycomb skill：
+
+```bash
+claude plugin install github:AegisLabsOrg/honeycomb-skill
+```
+
+安装后直接描述需求：
+
+```
+/honeycomb 创建一个购物车状态，支持添加商品和计算总价
+```
+
+Claude 会自动生成正确的 `StateRef`、`Computed`、`Effect`、Service 层和 UI 代码。
+
+---
+
 ## 🤝 贡献
 
 欢迎贡献！请查看 [CONTRIBUTING.md](CONTRIBUTING.md)。
